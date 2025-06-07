@@ -12,71 +12,83 @@ export type TipoPagoInversion = 'efectivo' | 'transferencia';
 
 export type TipoObjetivo = 'ahorro' | 'gasto' | 'inversion' | 'deuda';
 
-export interface TarjetaCredito {
+export interface Categoria {
   id: string;
   nombre: string;
-  banco: string;
-  limite: number;
-  fechaCorte: number;
-  fechaPago: number;
+  descripcion?: string;
+  created_at: string;
 }
 
 export interface Banco {
   id: string;
   nombre: string;
-  tipo: 'ahorro' | 'corriente' | 'inversion';
-  numeroCuenta?: string;
+  saldo: number;
+  created_at: string;
 }
 
-export interface Movimiento {
+export interface TarjetaCredito {
   id: string;
-  fecha: Date;
-  cantidad: number;
+  nombre: string;
+  banco_id: string;
+  limite: number;
+  saldo: number;
+  fecha_cierre: string;
+  fecha_pago: string;
+  ultimos_digitos?: string;
+  created_at: string;
+}
+
+export interface Gasto {
+  id: string;
   descripcion: string;
-  categoria: Categoria;
-  tipo: TipoMovimiento;
-  tipoPago: TipoPago;
-  tarjetaId?: string;
-  bancoId?: string;
+  precio: number;
+  categoria: string;
+  fecha: string;
+  tipo_pago: 'efectivo' | 'tarjeta' | 'transferencia';
+  banco_id?: string;
+  tarjeta_id?: string;
+  created_at: string;
 }
 
 export interface Ahorro {
   id: string;
-  fecha: Date;
-  cantidad: number;
   descripcion: string;
-  tipoAhorro: TipoAhorro;
-  bancoId?: string;
+  precio: number;
+  tipo_ahorro: 'diario' | 'semanal' | 'mensual' | 'anual';
+  fecha: string;
   meta?: number;
+  banco_id?: string;
+  created_at: string;
 }
 
 export interface Inversion {
   id: string;
-  fecha: Date;
-  cantidad: number;
-  tipo: TipoInversion;
   descripcion: string;
-  tipoPago: TipoPagoInversion;
-  bancoId?: string;
-  retornoEsperado?: number;
+  precio: number;
+  tipo: 'acciones' | 'bonos' | 'fondos' | 'criptomonedas' | 'bienes_raices' | 'otros';
+  fecha: string;
+  retorno_esperado?: number;
+  tipo_pago: 'efectivo' | 'tarjeta' | 'transferencia';
+  banco_id?: string;
+  created_at: string;
 }
 
 export interface Deuda {
   id: string;
-  fecha: Date;
-  cantidad: number;
   descripcion: string;
-  fechaVencimiento: Date;
+  precio: number;
+  fecha_vencimiento: string;
   interes?: number;
+  created_at: string;
 }
 
 export interface ObjetivoMensual {
   id: string;
-  mes: number;
-  año: number;
-  tipo: TipoObjetivo;
   descripcion: string;
-  cantidad: number;
+  precio: number;
+  mes: number;
+  anio: number;
   completado: boolean;
-  progreso: number;
+  progreso?: number;
+  created_at: string;
 }
