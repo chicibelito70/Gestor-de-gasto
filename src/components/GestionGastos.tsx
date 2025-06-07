@@ -2,8 +2,13 @@ import { useState, useEffect } from 'react'
 import { getGastos, createGasto, getBancos, getTarjetas } from '../services/supabaseService'
 import type { Gasto, Banco, TarjetaCredito } from '../types'
 import toast from 'react-hot-toast'
+import { CreditCard } from 'lucide-react'
 
-export function GestionGastos() {
+interface GestionGastosProps {
+  setSeccionActiva: (seccion: 'gastos' | 'ahorros' | 'inversiones' | 'deudas' | 'planificacion' | 'financiera') => void;
+}
+
+export function GestionGastos({ setSeccionActiva }: GestionGastosProps) {
   const [gastos, setGastos] = useState<Gasto[]>([])
   const [bancos, setBancos] = useState<Banco[]>([])
   const [tarjetas, setTarjetas] = useState<TarjetaCredito[]>([])
@@ -199,18 +204,28 @@ export function GestionGastos() {
           {nuevoGasto.tipo_pago === 'tarjeta' && (
             <div>
               <label className="block text-sm font-medium text-gray-700">Tarjeta</label>
-              <select
-                value={nuevoGasto.tarjeta_id}
-                onChange={(e) => setNuevoGasto({ ...nuevoGasto, tarjeta_id: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              >
-                <option value="">Seleccione una tarjeta</option>
-                {tarjetas.map((tarjeta) => (
-                  <option key={tarjeta.id} value={tarjeta.id}>
-                    {tarjeta.nombre}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={nuevoGasto.tarjeta_id}
+                  onChange={(e) => setNuevoGasto({ ...nuevoGasto, tarjeta_id: e.target.value })}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                >
+                  <option value="">Seleccione una tarjeta</option>
+                  {tarjetas.map((tarjeta) => (
+                    <option key={tarjeta.id} value={tarjeta.id}>
+                      {tarjeta.nombre} ({tarjeta.ultimos_digitos})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setSeccionActiva('financiera')}
+                  className="p-2 border border-gray-300 rounded-md shadow-sm text-gray-600 hover:text-gray-900 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  title="Gestionar Tarjetas"
+                >
+                  <CreditCard className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           )}
 

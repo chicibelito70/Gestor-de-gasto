@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { getBancos, getTarjetas, createBanco, createTarjeta, deleteTarjeta } from '../services/supabaseService'
+import { getBancos, getTarjetas, createBanco, createTarjeta, deleteTarjeta, updateTarjeta } from '../services/supabaseService'
 import type { Banco, TarjetaCredito } from '../types'
 import toast from 'react-hot-toast'
+import { Pencil, Trash2 } from 'lucide-react'
 
 export function GestionFinanciera() {
   const [bancos, setBancos] = useState<Banco[]>([])
@@ -17,8 +18,10 @@ export function GestionFinanciera() {
     limite: '',
     saldo: '',
     fecha_cierre: '',
-    fecha_pago: ''
+    fecha_pago: '',
+    ultimos_digitos: ''
   })
+  const [editingTarjeta, setEditingTarjeta] = useState<TarjetaCredito | null>(null)
 
   useEffect(() => {
     cargarDatos()
@@ -97,7 +100,8 @@ export function GestionFinanciera() {
         limite: parseFloat(nuevaTarjeta.limite),
         saldo: parseFloat(nuevaTarjeta.saldo) || 0,
         fecha_cierre: nuevaTarjeta.fecha_cierre,
-        fecha_pago: nuevaTarjeta.fecha_pago
+        fecha_pago: nuevaTarjeta.fecha_pago,
+        ultimos_digitos: nuevaTarjeta.ultimos_digitos || ''
       })
 
       setTarjetas([...tarjetas, tarjeta])
@@ -107,7 +111,8 @@ export function GestionFinanciera() {
         limite: '',
         saldo: '',
         fecha_cierre: '',
-        fecha_pago: ''
+        fecha_pago: '',
+        ultimos_digitos: ''
       })
       toast.success('Tarjeta agregada exitosamente')
     } catch (error) {
@@ -125,6 +130,55 @@ export function GestionFinanciera() {
       console.error('Error al eliminar tarjeta:', error)
       toast.error('Error al eliminar la tarjeta')
     }
+  }
+
+  const handleEditTarjeta = (tarjeta: TarjetaCredito) => {
+    setEditingTarjeta(tarjeta)
+  }
+
+  const handleUpdateTarjeta = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingTarjeta) return
+
+    try {
+      if (!editingTarjeta.nombre.trim()) {
+        toast.error('El nombre de la tarjeta es requerido')
+        return
+      }
+
+      if (!editingTarjeta.banco_id) {
+        toast.error('Debe seleccionar un banco')
+        return
+      }
+
+      if (!editingTarjeta.limite || parseFloat(editingTarjeta.limite.toString()) <= 0) {
+        toast.error('El límite debe ser mayor a 0')
+        return
+      }
+
+      if (!editingTarjeta.fecha_cierre || !editingTarjeta.fecha_pago) {
+        toast.error('Debe especificar las fechas de cierre y pago')
+        return
+      }
+
+      const updatedTarjeta = await updateTarjeta({
+        ...editingTarjeta,
+        limite: parseFloat(editingTarjeta.limite.toString()),
+        saldo: parseFloat(editingTarjeta.saldo.toString()) || 0,
+        ultimos_digitos: editingTarjeta.ultimos_digitos || ''
+      })
+
+      setTarjetas(tarjetas.map(t => t.id === updatedTarjeta.id ? updatedTarjeta : t))
+      setEditingTarjeta(null)
+      toast.success('Tarjeta actualizada exitosamente')
+    } catch (error) {
+      console.error('Error al actualizar tarjeta:', error)
+      toast.error('Error al actualizar la tarjeta')
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingTarjeta(null)
   }
 
   if (loading) {

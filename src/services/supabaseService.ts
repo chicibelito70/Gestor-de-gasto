@@ -129,6 +129,39 @@ export async function deleteTarjeta(id: string): Promise<void> {
   }
 }
 
+export async function updateTarjeta(tarjeta: TarjetaCredito): Promise<TarjetaCredito> {
+  try {
+    const { data, error } = await supabase
+      .from('tarjetas_credito')
+      .update({
+        nombre: tarjeta.nombre,
+        banco_id: tarjeta.banco_id,
+        limite: tarjeta.limite,
+        saldo: tarjeta.saldo,
+        fecha_cierre: tarjeta.fecha_cierre,
+        fecha_pago: tarjeta.fecha_pago,
+        ultimos_digitos: tarjeta.ultimos_digitos || null, // Asegurarse de que sea null si no se proporciona
+      })
+      .eq('id', tarjeta.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error al actualizar tarjeta:', error)
+      throw new Error(`Error al actualizar tarjeta: ${error.message}`)
+    }
+
+    if (!data) {
+      throw new Error('No se recibió respuesta al actualizar la tarjeta')
+    }
+
+    return data
+  } catch (error) {
+    console.error('Error en updateTarjeta:', error)
+    throw error
+  }
+}
+
 // Funciones para Gastos
 export async function getGastos(): Promise<Gasto[]> {
   const { data, error } = await supabase

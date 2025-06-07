@@ -34,6 +34,7 @@ export interface TarjetaCredito {
   saldo: number;
   fecha_cierre: string;
   fecha_pago: string;
+  ultimos_digitos?: string;
   created_at: string;
 }
 

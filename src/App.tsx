@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wallet, PiggyBank, TrendingUp, Coins, Calendar } from 'lucide-react';
+import { Wallet, PiggyBank, TrendingUp, Coins, Calendar, CreditCard } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { GestionGastos } from './components/GestionGastos';
 import { Dashboard } from './components/Dashboard';
@@ -10,12 +10,13 @@ import { FormularioDeuda } from './components/FormularioDeuda';
 import { GestionCategorias } from './components/GestionCategorias';
 import { GestionTarjetas } from './components/GestionTarjetas';
 import { GestionBancos } from './components/GestionBancos';
+import { GestionFinanciera } from './components/GestionFinanciera';
 import { PlanificacionMensual } from './components/PlanificacionMensual';
 import type { Movimiento, Ahorro, Inversion, Deuda, TarjetaCredito, Banco, Categoria, ObjetivoMensual } from './types';
 import { TestConnection } from './components/TestConnection'
 
 function App() {
-  const [seccionActiva, setSeccionActiva] = useState<'gastos' | 'ahorros' | 'inversiones' | 'deudas' | 'planificacion'>('gastos')
+  const [seccionActiva, setSeccionActiva] = useState<'gastos' | 'ahorros' | 'inversiones' | 'deudas' | 'planificacion' | 'financiera'>('gastos')
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -85,6 +86,17 @@ function App() {
                   <Calendar className="w-5 h-5 mr-2" />
                   Planificación
                 </button>
+                <button
+                  onClick={() => setSeccionActiva('financiera')}
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    seccionActiva === 'financiera'
+                      ? 'border-indigo-500 text-gray-900'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  }`}
+                >
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Gestión Financiera
+                </button>
               </div>
             </div>
           </div>
@@ -94,7 +106,7 @@ function App() {
       {/* Contenido principal */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {seccionActiva === 'gastos' && <GestionGastos />}
+          {seccionActiva === 'gastos' && <GestionGastos setSeccionActiva={setSeccionActiva} />}
           
           {seccionActiva === 'ahorros' && (
             <div className="text-center">
@@ -123,6 +135,8 @@ function App() {
               <p className="mt-2 text-gray-600">Próximamente...</p>
             </div>
           )}
+          
+          {seccionActiva === 'financiera' && <GestionFinanciera />}
         </div>
       </main>
     </div>
