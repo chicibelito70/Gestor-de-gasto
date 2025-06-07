@@ -9,8 +9,8 @@ interface FormularioAhorroProps {
 
 export function FormularioAhorro({ onSubmit, bancos }: FormularioAhorroProps) {
   const [form, setForm] = useState({
-    cantidad: '',
     descripcion: '',
+    precio: '',
     tipoAhorro: 'efectivo' as TipoAhorro,
     bancoId: '',
     meta: '',
@@ -22,7 +22,7 @@ export function FormularioAhorro({ onSubmit, bancos }: FormularioAhorroProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!form.cantidad || !form.descripcion) {
+    if (!form.descripcion || !form.precio) {
       toast.error('Por favor completa todos los campos obligatorios');
       return;
     }
@@ -32,18 +32,24 @@ export function FormularioAhorro({ onSubmit, bancos }: FormularioAhorroProps) {
       return;
     }
 
+    const precioNumerico = parseFloat(form.precio);
+    if (isNaN(precioNumerico) || precioNumerico <= 0) {
+      toast.error('El precio debe ser un número válido y mayor a 0');
+      return;
+    }
+
     onSubmit({
-      cantidad: Number(form.cantidad),
       descripcion: form.descripcion,
+      precio: precioNumerico,
       tipoAhorro: form.tipoAhorro,
       bancoId: form.tipoAhorro === 'transferencia' ? form.bancoId : undefined,
-      meta: form.meta ? Number(form.meta) : undefined,
+      meta: form.meta ? parseFloat(form.meta) : undefined,
       fecha: new Date(form.fecha)
     });
 
     setForm({
-      cantidad: '',
       descripcion: '',
+      precio: '',
       tipoAhorro: 'efectivo',
       bancoId: '',
       meta: '',
@@ -56,23 +62,6 @@ export function FormularioAhorro({ onSubmit, bancos }: FormularioAhorroProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="cantidad" className="block text-sm font-medium text-gray-700">
-          Cantidad
-        </label>
-        <input
-          type="number"
-          id="cantidad"
-          value={form.cantidad}
-          onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder="0.00"
-          min="0"
-          step="0.01"
-          required
-        />
-      </div>
-
-      <div>
         <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700">
           Descripción
         </label>
@@ -82,6 +71,22 @@ export function FormularioAhorro({ onSubmit, bancos }: FormularioAhorroProps) {
           value={form.descripcion}
           onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          required
+        />
+      </div>
+
+      <div>
+        <label htmlFor="precio" className="block text-sm font-medium text-gray-700">
+          Precio
+        </label>
+        <input
+          type="number"
+          id="precio"
+          value={form.precio}
+          onChange={(e) => setForm({ ...form, precio: e.target.value })}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          min="0"
+          step="0.01"
           required
         />
       </div>

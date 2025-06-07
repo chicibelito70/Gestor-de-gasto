@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Calendar, Target, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { ObjetivoMensual, TipoObjetivo } from '../types';
+import { createObjetivoMensual, getObjetivosMensuales, updateProgresoObjetivo } from '../services/supabaseService';
 
 interface PlanificacionMensualProps {
   objetivos: ObjetivoMensual[];
@@ -13,12 +14,15 @@ interface PlanificacionMensualProps {
 export function PlanificacionMensual({ objetivos, onAgregar, onActualizarProgreso, onEliminar }: PlanificacionMensualProps) {
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [form, setForm] = useState({
+    descripcion: '',
+    precio: '',
     mes: new Date().getMonth() + 1,
     año: new Date().getFullYear(),
     tipo: 'ahorro' as TipoObjetivo,
-    descripcion: '',
-    cantidad: '',
+    completado: false,
+    progreso: '0'
   });
+  const [loading, setLoading] = useState(true);
 
   const tiposObjetivo: TipoObjetivo[] = ['ahorro', 'gasto', 'inversion', 'deuda'];
   const meses = [
@@ -26,32 +30,39 @@ export function PlanificacionMensual({ objetivos, onAgregar, onActualizarProgres
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!form.descripcion || !form.cantidad) {
-      toast.error('Por favor completa todos los campos');
+    if (!form.descripcion || !form.precio) {
+      toast.error('La descripción y el precio son requeridos');
       return;
     }
 
-    onAgregar({
-      mes: form.mes,
-      año: form.año,
-      tipo: form.tipo,
-      descripcion: form.descripcion,
-      cantidad: Number(form.cantidad),
-    });
-
-    setForm({
-      mes: new Date().getMonth() + 1,
-      año: new Date().getFullYear(),
-      tipo: 'ahorro',
-      descripcion: '',
-      cantidad: '',
-    });
-
-    setMostrarFormulario(false);
-    toast.success('Objetivo mensual agregado correctamente');
+    try {
+      const nuevoObjetivo = await createObjetivoMensual({
+        descripcion: form.descripcion,
+        precio: Number(form.precio),
+        mes: form.mes,
+        año: form.año,
+        tipo: form.tipo,
+        completado: false,
+        progreso: Number(form.progreso)
+      });
+      onAgregar(nuevoObjetivo);
+      setForm({
+        descripcion: '',
+        precio: '',
+        mes: new Date().getMonth() + 1,
+        año: new Date().getFullYear(),
+        tipo: 'ahorro',
+        completado: false,
+        progreso: '0'
+      });
+      toast.success('Objetivo mensual registrado exitosamente!');
+    } catch (error) {
+      console.error('Error al registrar objetivo:', error);
+      toast.error('Error al registrar el objetivo');
+    }
   };
 
   const getBgColor = (tipo: TipoObjetivo) => {
@@ -153,11 +164,11 @@ export function PlanificacionMensual({ objetivos, onAgregar, onActualizarProgres
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Cantidad Objetivo</label>
+                <label className="block text-sm font-medium text-gray-700">Precio Objetivo</label>
                 <input
                   type="number"
-                  value={form.cantidad}
-                  onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
+                  value={form.precio}
+                  onChange={(e) => setForm({ ...form, precio: e.target.value })}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   placeholder="0.00"
                   min="0"
@@ -213,7 +224,7 @@ export function PlanificacionMensual({ objetivos, onAgregar, onActualizarProgres
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span>Meta: ${objetivo.cantidad}</span>
+                <span>Meta: ${objetivo.precio}</span>
                 <span className="font-medium">
                   {objetivo.completado ? (
                     <div className="flex items-center text-green-600">
@@ -221,7 +232,7 @@ export function PlanificacionMensual({ objetivos, onAgregar, onActualizarProgres
                       Completado
                     </div>
                   ) : (
-                    `${Math.round((objetivo.progreso / objetivo.cantidad) * 100)}%`
+                    `${Math.round((objetivo.progreso / objetivo.precio) * 100)}%`
                   )}
                 </span>
               </div>
@@ -229,7 +240,7 @@ export function PlanificacionMensual({ objetivos, onAgregar, onActualizarProgres
               <div className="w-full bg-white rounded-full h-2.5">
                 <div
                   className="bg-current h-2.5 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min((objetivo.progreso / objetivo.cantidad) * 100, 100)}%` }}
+                  style={{ width: `${Math.min((objetivo.progreso / objetivo.precio) * 100, 100)}%` }}
                 ></div>
               </div>
 
@@ -241,11 +252,12 @@ export function PlanificacionMensual({ objetivos, onAgregar, onActualizarProgres
                     className="flex-1 rounded-l-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     min="0"
                     step="0.01"
+                    value={objetivo.progreso}
                     onChange={(e) => {
                       const valor = Number(e.target.value);
                       if (valor >= 0) {
                         onActualizarProgreso(objetivo.id, valor);
-                        e.target.value = '';
+                        e.target.value = valor.toString();
                       }
                     }}
                   />
