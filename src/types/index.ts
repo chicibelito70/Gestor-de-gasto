@@ -22,20 +22,25 @@ export interface Categoria {
 export interface Banco {
   id: string;
   nombre: string;
-  saldo: number;
-  created_at: string;
+  tipo: 'debito' | 'credito';
+  ultimos_digitos?: string;
+  permite_transferencias: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TarjetaCredito {
   id: string;
   nombre: string;
-  banco_id: string;
+  banco: string;
+  banco_id?: string;
   limite: number;
-  saldo: number;
-  fecha_cierre: string;
-  fecha_pago: string;
+  fecha_cierre: number;
+  fecha_pago: number;
+  saldo?: number;
   ultimos_digitos?: string;
-  created_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Gasto {

@@ -10,7 +10,8 @@ CREATE TABLE categorias (
 CREATE TABLE bancos (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    saldo DECIMAL(10,2) DEFAULT 0,
+    tipo VARCHAR(10) NOT NULL DEFAULT 'debito' CHECK (tipo IN ('debito', 'credito')),
+    ultimos_digitos VARCHAR(4),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -23,6 +24,7 @@ CREATE TABLE tarjetas_credito (
     saldo DECIMAL(10,2) DEFAULT 0,
     fecha_cierre INTEGER NOT NULL,
     fecha_pago INTEGER NOT NULL,
+    ultimos_digitos VARCHAR(4),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -128,6 +130,21 @@ CREATE POLICY "Permitir inserción de bancos" ON bancos
 CREATE POLICY "Permitir lectura de bancos" ON bancos
   FOR SELECT
   USING (true);
+
+CREATE POLICY "Permitir actualización de bancos" ON bancos
+  FOR UPDATE
+  USING (true);
+
+-- Política específica para eliminación
+DROP POLICY IF EXISTS "Permitir eliminación de bancos" ON bancos;
+CREATE POLICY "Permitir eliminación de bancos" ON bancos
+  FOR DELETE
+  USING (true)
+  WITH CHECK (true);
+
+-- Asegurar que los permisos estén correctamente configurados
+GRANT ALL ON bancos TO authenticated;
+GRANT ALL ON bancos TO anon;
 
 -- Habilitar RLS para tarjetas
 ALTER TABLE tarjetas_credito ENABLE ROW LEVEL SECURITY;

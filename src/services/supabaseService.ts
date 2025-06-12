@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase'
+import { createClient } from '@supabase/supabase-js';
 import type { 
   Categoria, 
   Banco, 
@@ -9,6 +9,16 @@ import type {
   Deuda, 
   ObjetivoMensual 
 } from '../types'
+
+// Inicializar el cliente de Supabase
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Faltan las variables de entorno de Supabase');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Función para verificar la conexión
 export async function verificarConexion() {
@@ -41,36 +51,99 @@ export async function getBancos(): Promise<Banco[]> {
   const { data, error } = await supabase
     .from('bancos')
     .select('*')
-    .order('nombre')
-  
+    .order('created_at', { ascending: false });
+
   if (error) {
-    console.error('Error al obtener bancos:', error)
-    throw error
+    console.error('Error al obtener bancos:', error);
+    throw error;
   }
-  return data
+
+  return data || [];
 }
 
-export async function createBanco(banco: Omit<Banco, 'id' | 'created_at'>): Promise<Banco> {
-  try {
-    const { data, error } = await supabase
-      .from('bancos')
-      .insert([banco])
-      .select()
-      .single()
+export async function createBanco(banco: Omit<Banco, 'id'>): Promise<Banco> {
+  const { data, error } = await supabase
+    .from('bancos')
+    .insert([{
+      nombre: banco.nombre,
+      ultimos_digitos: banco.ultimos_digitos || ''
+    }])
+    .select()
+    .single();
 
-    if (error) {
-      console.error('Error al crear banco:', error)
-      throw new Error(`Error al crear banco: ${error.message}`)
+  if (error) {
+    console.error('Error al crear banco:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateBanco(banco: Banco): Promise<Banco> {
+  try {
+    console.log('Intentando actualizar banco con datos:', JSON.stringify(banco, null, 2));
+
+    // Realizamos la actualización
+    const { error: updateError } = await supabase
+      .from('bancos')
+      .update({
+        nombre: banco.nombre,
+        ultimos_digitos: banco.ultimos_digitos || ''
+      })
+      .eq('id', banco.id);
+
+    if (updateError) {
+      console.error('Error al actualizar banco:', updateError);
+      throw updateError;
+    }
+
+    // Obtenemos el banco actualizado
+    const { data, error: selectError } = await supabase
+      .from('bancos')
+      .select('*')
+      .eq('id', banco.id)
+      .single();
+
+    if (selectError) {
+      console.error('Error al obtener banco actualizado:', selectError);
+      throw selectError;
     }
 
     if (!data) {
-      throw new Error('No se recibió respuesta al crear el banco')
+      throw new Error('No se pudo obtener el banco actualizado');
     }
 
-    return data
-  } catch (error) {
-    console.error('Error en createBanco:', error)
-    throw error
+    return data;
+  } catch (error: any) {
+    console.error('Error completo al actualizar banco:', {
+      message: error.message,
+      stack: error.stack,
+      error: error,
+      data: banco
+    });
+    throw new Error(`Error al actualizar banco: ${error.message || 'Error desconocido'}`);
+  }
+}
+
+export async function deleteBanco(id: string): Promise<void> {
+  try {
+    console.log('Intentando eliminar banco con ID:', id);
+    
+    // Realizar la eliminación directamente
+    const { error: deleteError } = await supabase
+      .from('bancos')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Error al eliminar banco:', deleteError);
+      throw new Error(`Error al eliminar banco: ${deleteError.message}`);
+    }
+
+    console.log('Banco eliminado exitosamente');
+  } catch (error: any) {
+    console.error('Error detallado al eliminar banco:', error);
+    throw new Error(`Error al eliminar banco: ${error.message}`);
   }
 }
 
@@ -79,86 +152,98 @@ export async function getTarjetas(): Promise<TarjetaCredito[]> {
   const { data, error } = await supabase
     .from('tarjetas_credito')
     .select('*')
-    .order('nombre')
-  
+    .order('created_at', { ascending: false });
+
   if (error) {
-    console.error('Error al obtener tarjetas:', error)
-    throw error
+    console.error('Error al obtener tarjetas:', error);
+    throw error;
   }
-  return data
+
+  return data || [];
 }
 
-export async function createTarjeta(tarjeta: Omit<TarjetaCredito, 'id' | 'created_at'>): Promise<TarjetaCredito> {
+export async function createTarjeta(tarjeta: Omit<TarjetaCredito, 'id'>): Promise<TarjetaCredito> {
   try {
+    console.log('Intentando crear tarjeta con datos:', JSON.stringify(tarjeta, null, 2));
+    
+    if (!tarjeta.fecha_cierre || !tarjeta.fecha_pago) {
+      throw new Error('Las fechas de cierre y pago son requeridas');
+    }
+
     const { data, error } = await supabase
       .from('tarjetas_credito')
-      .insert([tarjeta])
+      .insert([{
+        nombre: tarjeta.nombre,
+        banco_id: tarjeta.banco,
+        limite: tarjeta.limite,
+        fecha_cierre: tarjeta.fecha_cierre,
+        fecha_pago: tarjeta.fecha_pago,
+        saldo: tarjeta.saldo || 0,
+        ultimos_digitos: tarjeta.ultimos_digitos || ''
+      }])
       .select()
-      .single()
+      .single();
 
     if (error) {
-      console.error('Error al crear tarjeta:', error)
-      throw new Error(`Error al crear tarjeta: ${error.message}`)
+      console.error('Error detallado al crear tarjeta:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        data: tarjeta
+      });
+      throw error;
     }
 
     if (!data) {
-      throw new Error('No se recibió respuesta al crear la tarjeta')
+      throw new Error('No se recibió respuesta al crear la tarjeta');
     }
 
-    return data
-  } catch (error) {
-    console.error('Error en createTarjeta:', error)
-    throw error
-  }
-}
-
-export async function deleteTarjeta(id: string): Promise<void> {
-  try {
-    const { error } = await supabase
-      .from('tarjetas_credito')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error al eliminar tarjeta:', error)
-      throw new Error(`Error al eliminar tarjeta: ${error.message}`)
-    }
-  } catch (error) {
-    console.error('Error en deleteTarjeta:', error)
-    throw error
+    return data;
+  } catch (error: any) {
+    console.error('Error completo al crear tarjeta:', {
+      message: error.message,
+      stack: error.stack,
+      error: error,
+      data: tarjeta
+    });
+    throw new Error(`Error al crear tarjeta: ${error.message || 'Error desconocido'}`);
   }
 }
 
 export async function updateTarjeta(tarjeta: TarjetaCredito): Promise<TarjetaCredito> {
-  try {
-    const { data, error } = await supabase
-      .from('tarjetas_credito')
-      .update({
-        nombre: tarjeta.nombre,
-        banco_id: tarjeta.banco_id,
-        limite: tarjeta.limite,
-        saldo: tarjeta.saldo,
-        fecha_cierre: tarjeta.fecha_cierre,
-        fecha_pago: tarjeta.fecha_pago,
-        ultimos_digitos: tarjeta.ultimos_digitos || null, // Asegurarse de que sea null si no se proporciona
-      })
-      .eq('id', tarjeta.id)
-      .select()
-      .single()
+  const { data, error } = await supabase
+    .from('tarjetas_credito')
+    .update({
+      nombre: tarjeta.nombre,
+      banco_id: tarjeta.banco,
+      limite: tarjeta.limite,
+      fecha_cierre: tarjeta.fecha_corte,
+      fecha_pago: tarjeta.fecha_pago,
+      saldo: tarjeta.saldo || 0,
+      ultimos_digitos: tarjeta.ultimos_digitos || ''
+    })
+    .eq('id', tarjeta.id)
+    .select()
+    .single();
 
-    if (error) {
-      console.error('Error al actualizar tarjeta:', error)
-      throw new Error(`Error al actualizar tarjeta: ${error.message}`)
-    }
+  if (error) {
+    console.error('Error al actualizar tarjeta:', error);
+    throw error;
+  }
 
-    if (!data) {
-      throw new Error('No se recibió respuesta al actualizar la tarjeta')
-    }
+  return data;
+}
 
-    return data
-  } catch (error) {
-    console.error('Error en updateTarjeta:', error)
-    throw error
+export async function deleteTarjeta(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('tarjetas_credito')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error al eliminar tarjeta:', error);
+    throw error;
   }
 }
 
